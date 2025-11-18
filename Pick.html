@@ -1,0 +1,447 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片颜色提取器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f2f5;
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            color: #4a6fa5;
+        }
+        
+        .subtitle {
+            font-size: 1rem;
+            opacity: 0.7;
+            margin-bottom: 20px;
+        }
+        
+        .upload-section {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 30px;
+            border: 1px dashed #ddd;
+        }
+        
+        .upload-btn {
+            background: #4a6fa5;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        
+        .upload-btn:hover {
+            background: #3a5a80;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .preview-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .image-preview {
+            flex: 1;
+            min-width: 250px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+        }
+        
+        .image-preview h2 {
+            margin-bottom: 15px;
+            color: #4a6fa5;
+            font-size: 1.2rem;
+        }
+        
+        .image-container {
+            width: 100%;
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #e9ecef;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+        
+        .image-container img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        
+        .placeholder-text {
+            color: #adb5bd;
+            font-style: italic;
+        }
+        
+        .color-palette {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+            margin-top: 15px;
+        }
+        
+        .color-item {
+            border-radius: 5px;
+            padding: 12px;
+            min-width: 100px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+        
+        .color-value {
+            font-size: 1rem;
+            font-weight: bold;
+            margin-top: 5px;
+            letter-spacing: 1px;
+        }
+        
+        .color-name {
+            font-size: 0.85rem;
+            opacity: 0.8;
+            margin-bottom: 3px;
+        }
+        
+        .instructions {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .instructions h2 {
+            color: #4a6fa5;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+        
+        .instructions ul {
+            padding-left: 20px;
+        }
+        
+        .instructions li {
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            display: none;
+        }
+        
+        .spinner {
+            border: 4px solid rgba(74, 111, 165, 0.2);
+            border-radius: 50%;
+            border-top: 4px solid #4a6fa5;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            font-size: 0.85rem;
+            color: #6c757d;
+        }
+        
+        @media (max-width: 768px) {
+            .preview-container {
+                flex-direction: column;
+            }
+            
+            .container {
+                padding: 15px;
+            }
+            
+            h1 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎨 图片颜色提取器</h1>
+            <p class="subtitle">上传图片，按比率提取主要颜色</p>
+        </header>
+        
+        <section class="upload-section">
+            <button class="upload-btn" id="uploadBtn">
+                选择图片
+            </button>
+            <input type="file" id="fileInput" class="file-input" accept="image/*">
+            <p style="margin-top: 10px; font-size: 0.9rem; color: #6c757d;">支持 JPG, PNG, GIF 格式</p>
+        </section>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>正在分析图片颜色...</p>
+        </div>
+        
+        <div class="preview-container">
+            <div class="image-preview">
+                <h2>原始图片</h2>
+                <div class="image-container" id="originalContainer">
+                    <span class="placeholder-text">上传的图片将显示在这里</span>
+                    <img id="originalImage" src="" alt="原始图片" style="display: none;">
+                </div>
+            </div>
+            
+            <div class="image-preview">
+                <h2>提取的颜色</h2>
+                <div class="color-palette" id="colorPalette"></div>
+            </div>
+        </div>
+        
+        <div class="instructions">
+            <h2>使用说明</h2>
+            <ul>
+                <li>点击"选择图片"按钮上传您想要分析的图片</li>
+                <li>系统将按颜色在图片中所占比例排序提取前5种颜色</li>
+                <li>颜色按从多到少的顺序显示</li>
+                <li>颜色代码会以十六进制格式显示</li>
+            </ul>
+        </div>
+        
+        <div class="footer">
+            <p>图片颜色提取器 &copy; 2023</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 确保所有DOM元素都存在
+            const fileInput = document.getElementById('fileInput');
+            const uploadBtn = document.getElementById('uploadBtn');
+            const originalImage = document.getElementById('originalImage');
+            const loading = document.getElementById('loading');
+            const colorPalette = document.getElementById('colorPalette');
+            const originalContainer = document.getElementById('originalContainer');
+            
+            // 如果有任何元素未找到，则显示错误
+            if (!fileInput || !uploadBtn || !originalImage || !loading || !colorPalette || !originalContainer) {
+                console.error('DOM元素未找到');
+                return;
+            }
+            
+            // 颜色名称映射（简化版）
+            const colorNames = {
+                '#FF0000': '红色',
+                '#00FF00': '绿色',
+                '#0000FF': '蓝色',
+                '#FFFF00': '黄色',
+                '#FF00FF': '品红',
+                '#00FFFF': '青色',
+                '#FFA500': '橙色',
+                '#800080': '紫色',
+                '#FFC0CB': '粉色',
+                '#A52A2A': '棕色',
+                '#FFFFFF': '白色',
+                '#000000': '黑色',
+                '#808080': '灰色',
+                '#C0C0C0': '银色',
+                '#800000': '栗色',
+                '#008000': '深绿色',
+                '#000080': '海军蓝',
+                '#808000': '橄榄绿',
+                '#800080': '紫红色',
+                '#008080': 'teal',
+                '#FFA500': '橙色'
+            };
+            
+            // 模拟颜色提取函数
+            function extractColors(img) {
+                // 创建一个临时canvas来分析颜色
+                const tempCanvas = document.createElement('canvas');
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCanvas.width = img.width;
+                tempCanvas.height = img.height;
+                
+                // 将图片绘制到临时canvas
+                tempCtx.drawImage(img, 0, 0, img.width, img.height);
+                
+                // 获取图像数据
+                const imageData = tempCtx.getImageData(0, 0, img.width, img.height);
+                const data = imageData.data;
+                
+                // 简化的颜色提取逻辑
+                const colorCounts = {};
+                
+                // 每隔几个像素取样一次以提高性能
+                const step = Math.max(1, Math.floor(data.length / 4 / 10000)); // 最多取样10000个像素点
+                
+                for (let i = 0; i < data.length; i += step * 4) {
+                    const r = data[i];
+                    const g = data[i + 1];
+                    const b = data[i + 2];
+                    
+                    // 将颜色值量化以减少颜色数量
+                    const quantizedR = Math.round(r / 32) * 32;
+                    const quantizedG = Math.round(g / 32) * 32;
+                    const quantizedB = Math.round(b / 32) * 32;
+                    
+                    const colorKey = `rgb(${quantizedR},${quantizedG},${quantizedB})`;
+                    
+                    if (colorCounts[colorKey]) {
+                        colorCounts[colorKey]++;
+                    } else {
+                        colorCounts[colorKey] = 1;
+                    }
+                }
+                
+                // 获取最常见的颜色（限制为前5种），按数量排序
+                const sortedColors = Object.entries(colorCounts)
+                    .sort((a, b) => b[1] - a[1]) // 按数量降序排列
+                    .slice(0, 5) // 只取前5种颜色
+                    .map(entry => {
+                        // 将rgb格式转换为十六进制
+                        const rgb = entry[0].match(/\d+/g);
+                        const hex = "#" + ((1 << 24) + (parseInt(rgb[0]) << 16) + (parseInt(rgb[1]) << 8) + parseInt(rgb[2])).toString(16).slice(1);
+                        return {
+                            color: hex,
+                            count: entry[1] // 保留数量信息用于排序
+                        };
+                    });
+                
+                return sortedColors;
+            }
+            
+            // 生成颜色参考图
+            function generateColorReference(colors) {
+                // 清空之前的颜色面板
+                colorPalette.innerHTML = '';
+                
+                // 创建颜色信息显示
+                colors.forEach(color => {
+                    const colorItem = document.createElement('div');
+                    colorItem.className = 'color-item';
+                    
+                    // 设置背景色
+                    colorItem.style.backgroundColor = color.color;
+                    
+                    const colorName = document.createElement('div');
+                    colorName.className = 'color-name';
+                    colorName.textContent = colorNames[color.color.toUpperCase()] || '自定义颜色';
+                    
+                    const colorValue = document.createElement('div');
+                    colorValue.className = 'color-value';
+                    colorValue.textContent = color.color.toUpperCase(); // 显示大写颜色代码
+                    
+                    colorItem.appendChild(colorName);
+                    colorItem.appendChild(colorValue);
+                    
+                    colorPalette.appendChild(colorItem);
+                });
+            }
+            
+            // 上传按钮点击事件
+            uploadBtn.addEventListener('click', () => {
+                fileInput.click();
+            });
+            
+            // 文件选择事件
+            fileInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                // 检查文件类型
+                if (!file.type.match('image.*')) {
+                    alert('请选择图片文件！');
+                    return;
+                }
+                
+                // 显示加载状态
+                loading.style.display = 'block';
+                
+                // 创建图片对象
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    originalImage.src = event.target.result;
+                    originalImage.style.display = 'block';
+                    
+                    // 隐藏占位文本
+                    const placeholderText = originalContainer.querySelector('.placeholder-text');
+                    if (placeholderText) {
+                        placeholderText.style.display = 'none';
+                    }
+                    
+                    // 图片加载完成后进行颜色分析
+                    originalImage.onload = function() {
+                        // 模拟处理时间
+                        setTimeout(() => {
+                            // 提取颜色
+                            const colors = extractColors(originalImage);
+                            
+                            // 生成颜色参考图
+                            generateColorReference(colors);
+                            
+                            // 隐藏加载状态
+                            loading.style.display = 'none';
+                        }, 1500);
+                    };
+                };
+                reader.readAsDataURL(file);
+            });
+        });
+    </script>
+</body>
+</html>
+
+
